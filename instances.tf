@@ -18,10 +18,10 @@ filename = "tf-key-pair"
 # Provision ec2 instance 1
 resource "aws_instance" "tf-mike-ec2-1" {
   ami               = "ami-0d3f444bc76de0a79"
-  instance_type     = "t3a.micro"
+  instance_type     = var.instance_types[1]
   subnet_id         = aws_subnet.tf-mike-subnet-1.id
   vpc_security_group_ids = [aws_security_group.tf-mike-sg.id]
-  associate_public_ip_address = true
+  associate_public_ip_address = var.associate_public_ip_address
   user_data = file("${path.module}/run-docker.sh")
   key_name                   = "tf-key-pair-mike"
   tags = {
@@ -32,10 +32,10 @@ resource "aws_instance" "tf-mike-ec2-1" {
 # Provision ec2 instance 2
 resource "aws_instance" "tf-mike-ec2-2" {
   ami               = "ami-0d3f444bc76de0a79"
-  instance_type     = "t3a.micro"
+  instance_type     = var.instance_types[1]
   subnet_id         = aws_subnet.tf-mike-subnet-2.id
   vpc_security_group_ids = [aws_security_group.tf-mike-sg.id]
-  associate_public_ip_address = true
+  associate_public_ip_address = var.associate_public_ip_address
   user_data = file("${path.module}/run-docker.sh")
   key_name                   = "tf-key-pair-mike" 
   tags = {

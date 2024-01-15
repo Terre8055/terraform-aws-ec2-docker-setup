@@ -4,7 +4,7 @@ data "http" "what_is_my_ip" {
 
 # Create VPC
 resource "aws_vpc" "tf-m-vpc" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block = var.vpc_cidr_block
 }
 
 # Attach an inetrnet gateway to the VPC 
@@ -15,16 +15,16 @@ resource "aws_internet_gateway" "tf-m-igw" {
 # Create subnet 1 in availability zone 1a
 resource "aws_subnet" "tf-mike-subnet-1" {
     vpc_id = aws_vpc.tf-m-vpc.id
-    availability_zone = "ap-south-1a"
-    cidr_block = "10.0.1.0/24"
+    availability_zone = var.az_zones[0]
+    cidr_block = var.public_subnet_cidr_blocks[0]
     map_public_ip_on_launch = true
 }
 
 # Create subnet 2 in availability zone 1b
 resource "aws_subnet" "tf-mike-subnet-2" {
     vpc_id = aws_vpc.tf-m-vpc.id
-    availability_zone = "ap-south-1b"
-    cidr_block = "10.0.2.0/24"
+    availability_zone = var.az_zones[1]
+    cidr_block = var.public_subnet_cidr_blocks[1]
     map_public_ip_on_launch = true
 }
 
@@ -33,7 +33,7 @@ resource "aws_route_table" "tf-mike-public-rt" {
   vpc_id = aws_vpc.tf-m-vpc.id
 
   route {
-    cidr_block = "0.0.0.0/0"
+    cidr_block = var.cidr_all
     gateway_id = aws_internet_gateway.tf-m-igw.id
   }
 }
@@ -57,28 +57,29 @@ resource "aws_security_group" "tf-mike-sg" {
     vpc_id      = aws_vpc.tf-m-vpc.id
 
     ingress {
-        description = "HTTP ingress"
-        from_port   = 80
-        to_port     = 80
-        protocol    = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
+        description = var.security_group_default["HTTP"]["description"]
+        from_port   = var.security_group_default["HTTP"]["from_port"]
+        to_port     = var.security_group_default["HTTP"]["to_port"]
+        protocol    = var.security_group_default["HTTP"]["protocol"]
+        cidr_blocks = var.security_group_default["HTTP"]["cidr_blocks"]
     }
 
     ingress {
-        description = "SSH ingress"
-        from_port   = 22
-        to_port     = 22
-        protocol    = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
+        description = var.security_group_default["SSH"]["description"]
+        from_port   = var.security_group_default["SSH"]["from_port"]
+        to_port     = var.security_group_default["SSH"]["to_port"]
+        protocol    = var.security_group_default["SSH"]["protocol"]
+        cidr_blocks = var.security_group_default["SSH"]["cidr_blocks"]
     }
 
     ingress {
-        description = "Target Group listeners"
-        from_port   = 3000
-        to_port     = 3000
-        protocol    = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
+        description = var.security_group_default["TG"]["description"]
+        from_port   = var.security_group_default["TG"]["from_port"]
+        to_port     = var.security_group_default["TG"]["to_port"]
+        protocol    = var.security_group_default["TG"]["protocol"]
+        cidr_blocks = var.security_group_default["TG"]["cidr_blocks"]
     }
+
 
     egress {
         from_port   = 0
@@ -95,11 +96,11 @@ resource "aws_security_group" "tf-mike-sg-lb" {
     vpc_id      = aws_vpc.tf-m-vpc.id
 
     ingress {
-        description = "HTTP ingress"
-        from_port   = 80
-        to_port     = 80
-        protocol    = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
+        description = var.security_group_default["ALB"]["description"]
+        from_port   = var.security_group_default["ALB"]["from_port"]
+        to_port     = var.security_group_default["ALB"]["to_port"]
+        protocol    = var.security_group_default["ALB"]["protocol"]
+        cidr_blocks = var.security_group_default["ALB"]["cidr_blocks"]
     }
 
     egress {
@@ -114,7 +115,7 @@ resource "aws_security_group" "tf-mike-sg-lb" {
 resource "aws_lb" "tf-mike-alb" {
   name               = "tf-mike-alb"
   internal           = false
-  load_balancer_type = "application"
+  load_balancer_type = var.lb_types["alb"]
   security_groups    = [aws_security_group.tf-mike-sg-lb.id]
   subnets            = [aws_subnet.tf-mike-subnet-1.id, aws_subnet.tf-mike-subnet-2.id]
 }
@@ -122,17 +123,17 @@ resource "aws_lb" "tf-mike-alb" {
 #Create load balancer target group
 resource "aws_lb_target_group" "tf-mike-tg" {
   name              = "tf-mike-tg"
-  port              = 3000
-  protocol          = "HTTP"
+  port              = var.target_group_config["port"]["value"]
+  protocol          = var.target_group_config["protocol"]["value"]
   vpc_id            = aws_vpc.tf-m-vpc.id
   health_check {
-    enabled         = true
-    healthy_threshold = 3
-    interval        = 10
-    matcher         = 200
-    protocol        = "HTTP"
-    timeout         = 3
-    unhealthy_threshold = 2
+    enabled         = var.target_group_config["health_check"]["enabled"]
+    healthy_threshold = var.target_group_config["health_check"]["healthy_threshold"]
+    interval        = var.target_group_config["health_check"]["interval"]
+    matcher         = var.target_group_config["health_check"]["matcher"]
+    protocol          = var.target_group_config["protocol"]["value"]
+    timeout         = var.target_group_config["health_check"]["timeout"]
+    unhealthy_threshold = var.target_group_config["health_check"]["unhealthy_threshold"]
   }
 }
 
@@ -140,20 +141,20 @@ resource "aws_lb_target_group" "tf-mike-tg" {
 resource "aws_lb_target_group_attachment" "attach-tg-ec2-1" {
     target_group_arn = aws_lb_target_group.tf-mike-tg.arn
     target_id        = aws_instance.tf-mike-ec2-1.id
-    port             = 3000
+    port             = var.target_group_port
 }
 
 resource "aws_lb_target_group_attachment" "attach-tg-ec2-2" {
     target_group_arn = aws_lb_target_group.tf-mike-tg.arn
     target_id        = aws_instance.tf-mike-ec2-2.id
-    port             = 3000
+    port             = var.target_group_port
 }
 
 #Create listerner and mount to target group
 resource "aws_lb_listener" "tf-mike-alb-lst" {
   load_balancer_arn = aws_lb.tf-mike-alb.arn
-  port              =  80
-  protocol          =  "HTTP"
+  port              =  var.load_balancer_listener["port"]
+  protocol          =  var.load_balancer_listener["protocol"]
 
   default_action {
     type             = "forward"
