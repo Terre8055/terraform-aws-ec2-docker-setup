@@ -1,24 +1,9 @@
-variable "aws_region" {
-  description = "AWS region"
-  type        = string
-  default     = "ap-south-1"
+variable "instance_count" {
+  description   = "NUmber of instances to provision"
+  type          = number
+  default       = 2
 }
 
-variable "ec2_name" {
-  type = string
-  default = "ec2-mike"
-}
-
-#Default tags for resources
-variable "tags"{
-    description     = "Default tags"
-    type            = map(string)
-    default         = {
-        owner       = "michael.appiah.dankwah"
-        expiration_date = "03-03-2024"
-        bootcamp    = "ghana2"
-    }
-}
 
 #Cidr for vpc
 variable "vpc_cidr_block" {
@@ -27,13 +12,14 @@ variable "vpc_cidr_block" {
   default     = "10.0.0.0/16"
 }
 
+
 #Available cidr blocks for public subnets
 variable "public_subnet_cidr_blocks" {
   description = "Available cidr blocks for public subnets."
   type        = list(string)
   default     = [
     "10.0.1.0/24",
-    "10.0.2.0/24"
+    "10.0.2.0/24",
   ]
 }
 
@@ -94,6 +80,25 @@ variable "security_group_default"{
     }
 }
 
+
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = "ap-south-1"
+}
+
+
+#Default tags for resources
+variable "tags"{
+    description     = "Default tags"
+    type            = map(string)
+    default         = {
+        owner       = "michael.appiah.dankwah"
+        expiration_date = "03-03-2024"
+        bootcamp    = "ghana2"
+    }
+}
+
 variable "lb_types" {
   description = "Load Balancer types"
   type        = map(string)
@@ -144,8 +149,8 @@ variable "load_balancer_listener" {
 
 variable "instance_types" {
     description = "Instance types to use"
-    type = list(string)
-    default     = ["t2.micro", "t3a.micro"]
+    type = string
+    default     = "t3a.micro"
 }
 
 variable "associate_public_ip_address" {
@@ -154,3 +159,28 @@ variable "associate_public_ip_address" {
     default = true
   
 }
+
+variable "subnet_count" {
+  description   = "Number of subnets"
+  type          = number   
+  default       = 2
+}
+
+variable "asg_min" {
+  description = "Minimum number of instances in asg"
+  type        = number 
+  default     = 2
+} 
+
+variable "asg_max" {
+  description = "Max number of instances in asg"
+  type        = number 
+  default     = 4
+} 
+
+variable "asg_ok" {
+  description = "Desired number of instances in asg"
+  type        = number 
+  default     = 2
+
+} 

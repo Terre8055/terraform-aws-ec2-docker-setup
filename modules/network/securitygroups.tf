@@ -3,17 +3,17 @@ data "http" "what_is_my_ip" {
 }
 
 # Create security group rules for the instances
-resource "aws_security_group" "tf-mike-sg" {
-    name        = "tf-ec2-mike-sg-tf"
-    description = "Allow HTTP, SSH to INSTANCES"
-    vpc_id      = aws_vpc.tf-m-vpc.id
+resource "aws_security_group" "sg-inst" {
+    name            = "tf-ec2-mike-sg-tf-${terraform.workspace}"
+    description     = "Allow HTTP, SSH to INSTANCES"
+    vpc_id          = aws_vpc.tf-m-vpc.id
 
     ingress {
         description = var.security_group_default["HTTP"]["description"]
         from_port   = var.security_group_default["HTTP"]["from_port"]
         to_port     = var.security_group_default["HTTP"]["to_port"]
         protocol    = var.security_group_default["HTTP"]["protocol"]
-        cidr_blocks = var.security_group_default["HTTP"]["cidr_blocks"]
+        security_groups = [aws_security_group.sg-lb.id]
     }
 
     ingress {
@@ -41,8 +41,8 @@ resource "aws_security_group" "tf-mike-sg" {
 }
 
 # Create security group for the load balancers
-resource "aws_security_group" "tf-mike-sg-lb" {
-    name        = "tf-mike-sg-lb"
+resource "aws_security_group" "sg-lb" {
+    name        = "tf-mike-sg-lb-${terraform.workspace}"
     description = "Allow HTTP"
     vpc_id      = aws_vpc.tf-m-vpc.id
 
